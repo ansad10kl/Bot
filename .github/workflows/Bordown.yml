@@ -1,0 +1,32 @@
+name: Ubuntu VPS via Ngrok
+
+on: workflow_dispatch:
+
+jobs: deploy: runs-on: ubuntu-latest
+
+steps:
+- name: Checkout
+  uses: actions/checkout@v3
+
+- name: Install packages
+  run: |
+    sudo apt update && sudo apt install -y openssh-server curl
+    curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+    echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+    sudo apt update && sudo apt install -y ngrok
+
+- name: Setup SSH Key
+  run: |
+    mkdir -p ~/.ssh
+    echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDUN765Y5BFPMN7Mrdhkh5BTgKY9cC8oH6QFe4qsHuRoiIx9PDL75vozwqHcYp4FqtdUgpUqj2Q0BLO9wLrzXyrJdOmwVSim2wEj2L/qrsnscZ1MMriE7DuM2FDAT8Nqn00xblFEZc+OffHCy/bc/lPaGkeq6/51o5h2vv/oCLbM4/rjZ7quF9OPPPDDLu4tt7pGpfMX8XE3kYAKMuFnZw6eqfX0HqQ8kZU7wLJ6zJYWbV7ojxAEa4/Pd474N/sg7QHoLl6BcKptXMIwyXXfzslc0MMbyWZivoBMBEOYh9uECgh0xoht1++WpItd3YuTOAT+Fts9oYs21GcuSiBB7h/" >> ~/.ssh/authorized_keys
+    chmod 600 ~/.ssh/authorized_keys
+    sudo service ssh start
+
+- name: Start Ngrok Tunnel
+  run: |
+    ngrok config add-authtoken 7EQZ23TOZI5WFEPFZH4XUQQ3VD6DFU7U
+    nohup ngrok tcp 22 &
+    sleep 20
+    curl -s http://127.0.0.1:4040/api/tunnels > tunnels.json
+    cat tunnels.json
+
